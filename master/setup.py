@@ -127,9 +127,12 @@ if 'sdist' in sys.argv or sys.platform == 'win32':
     scripts.append("contrib/windows/buildbot.bat")
     scripts.append("contrib/windows/buildbot_service.py")
 
+# Pre-release have dashes in version and they are not valid.
+public_version = version.replace('-', '.')
+
 setup_args = {
     'name': "buildbot",
-    'version': version,
+    'version': public_version + '.c1',
     'description': "BuildBot build automation system",
     'long_description': long_description,
     'author': "Brian Warner",

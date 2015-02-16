@@ -15,7 +15,11 @@
 
 import os
 
-from bz2 import BZ2File
+try:
+    from bz2 import BZ2File
+except ImportError:
+    from bz2file import BZ2File
+
 from cStringIO import StringIO
 from gzip import GzipFile
 
