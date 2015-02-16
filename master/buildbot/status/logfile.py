@@ -18,7 +18,8 @@ import os
 try:
     from bz2 import BZ2File
 except ImportError:
-    from bz2file import BZ2File
+    def BZ2File(path, mode):
+        raise IOError('bz2 not available')
 
 from cStringIO import StringIO
 from gzip import GzipFile

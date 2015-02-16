@@ -29,7 +29,10 @@ from buildbot.status.results import WARNINGS
 from buildbot.steps.shell import WithProperties
 
 import base64
-import bz2
+try:
+    import bz2
+except ImportError:
+    bz2 = None
 import cStringIO
 import gzip
 import re
