@@ -68,9 +68,12 @@ class our_sdist(sdist):
         dst_fn = os.path.join(base_dir, 'NEWS')
         open(dst_fn, 'w').write(src)
 
+
+valid_version = version.replace('-', '.')
+
 setup_args = {
     'name': "buildbot-slave",
-    'version': version,
+    'version': valid_version + '.c1',
     'description': "BuildBot Slave Daemon",
     'long_description': "See the 'buildbot' package for details",
     'author': "Brian Warner",
