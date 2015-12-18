@@ -132,7 +132,7 @@ public_version = version.replace('-', '.')
 
 setup_args = {
     'name': "buildbot",
-    'version': public_version + '.c3',
+    'version': public_version + '.c4',
     'description': "BuildBot build automation system",
     'long_description': long_description,
     'author': "Brian Warner",

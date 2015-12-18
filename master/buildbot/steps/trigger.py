@@ -21,6 +21,7 @@ from buildbot.process.buildstep import LoggingBuildStep
 from buildbot.process.buildstep import SUCCESS
 from buildbot.process.properties import Properties
 from buildbot.process.properties import Property
+from buildbot.status.results import Results
 from twisted.internet import defer
 from twisted.python import log
 
@@ -205,8 +206,12 @@ class Trigger(LoggingBuildStep):
                             bn = brid_to_bn[build['brid']]
                             num = build['number']
 
-                            url = master.status.getURLForBuild(bn, num)
-                            self.step_status.addURL("%s #%d" % (bn, num), url)
+                            builder = master.status.getBuilder(bn)
+                            build = builder.getBuildByNumber(num)
+                            build_status = Results[build.getResults()].upper()
+                            self.step_status.addURL("%s #%d %s" % (
+                                bn, num, build_status), url)
+
 
             builddicts = [master.db.builds.getBuildsForRequest(br) for br in brids.values()]
             res = yield defer.DeferredList(builddicts, consumeErrors=1)
