@@ -206,6 +206,7 @@ class Trigger(LoggingBuildStep):
                             bn = brid_to_bn[build['brid']]
                             num = build['number']
 
+                            url = master.status.getURLForBuild(bn, num)
                             builder = master.status.getBuilder(bn)
                             build = builder.getBuildByNumber(num)
                             build_status = Results[build.getResults()].upper()
