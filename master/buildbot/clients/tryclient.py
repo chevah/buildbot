@@ -696,6 +696,9 @@ class Try(pb.Referenceable):
         # epoch)
         self.ETA = {}
 
+        # Number of the current build for each builder.
+        self.buildNumbers = {}
+
         for n, br in brs:
             self.builderNames.append(n)
             self.buildRequests[n] = br
@@ -704,22 +707,28 @@ class Try(pb.Referenceable):
             self.results[n] = [None, None]
             self.currentStep[n] = None
             self.ETA[n] = None
+            self.buildNumbers[n] = None
             # get new Builds for this buildrequest. We follow each one until
             # it finishes or is interrupted.
             br.callRemote("subscribe", self)
 
         # now that those queries are in transit, we can start the
-        # display-status-every-30-seconds loop
+        # loop to show status.
         if not self.getopt("quiet"):
             self.printloop = task.LoopingCall(self.printStatus)
-            self.printloop.start(3, now=False)
+            self.printloop.start(2, now=False)
 
     # these methods are invoked by the status objects we've subscribed to
 
-    def remote_newbuild(self, bs, builderName):
+    def remote_newbuild(self, bs, builderName, buildNumber):
+        """
+        Called by buildmaster when a new build is created.
+        """
         if self.builds[builderName]:
             self.builds[builderName].callRemote("unsubscribe", self)
         self.builds[builderName] = bs
+        self.buildNumbers[builderName] = buildNumber
+
         bs.callRemote("subscribe", self, 20)
         d = bs.callRemote("waitUntilFinished")
         d.addCallback(self._build_finished, builderName)
@@ -728,7 +737,26 @@ class Try(pb.Referenceable):
         self.currentStep[buildername] = stepname
 
     def remote_stepFinished(self, buildername, build, stepname, step, results):
-        pass
+        output('-' * 72)
+        output('| Step done: %s %s' % (stepname, results))
+        output('-' * 72)
+
+        def cb_got_logs_references(result):
+            """
+            Called when we got the references to logs for this step.
+            """
+            for log_name, log_pb in result.items():
+                d = log_pb.callRemote('getTextWithHeaders')
+                d.addCallback(cb_got_log_content, log_name)
+
+        def cb_got_log_content(result, log_name):
+            """
+            Called when we got log's content.
+            """
+            output('-' * 72)
+            output('| Logs for %s' % (log_name,))
+            output('-' * 72)
+            output(result)
 
     def remote_buildETAUpdate(self, buildername, build, eta):
         self.ETA[buildername] = now() + eta
@@ -784,7 +812,7 @@ class Try(pb.Referenceable):
             self.printloop.stop()
             self.printloop = None
         output("All Builds Complete")
-        # TODO: include a URL for all failing builds
+
         names = sorted(self.buildRequests.keys())
         happy = True
         for n in names:
@@ -792,6 +820,10 @@ class Try(pb.Referenceable):
             t = "%s: %s" % (n, builder.Results[code])
             if text:
                 t += " (%s)" % " ".join(text)
+                status_url = self.getopt("web-status")
+                if status_url:
+                    t += " %s/builders/%s/builds/%s" % (
+                        status_url, n, self.buildNumbers[n])
             output(t)
             if code != builder.SUCCESS:
                 happy = False

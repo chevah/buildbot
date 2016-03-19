@@ -398,6 +398,9 @@ class TryOptions(base.SubcommandOptions):
         ["comment", "C", None,
          "A comment which can be used in notifications for this build"],
 
+        ("web-status", None, None,
+         "URL to the buildmaster's web status (https://host:port"),
+
         # for ssh to accommodate running in a virtualenv on the buildmaster
         ["buildbotbin", None, "buildbot",
          "buildbot binary to use on the buildmaster host"],

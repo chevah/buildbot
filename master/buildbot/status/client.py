@@ -142,7 +142,10 @@ class RemoteBuildRequest(pb.Referenceable):
         Build that is created to handle this BuildRequest."""
         def send(bs):
             d = observer.callRemote("newbuild",
-                                    IRemote(bs), self.b.getBuilderName())
+                IRemote(bs),
+                self.b.getBuilderName(),
+                bs.getNumber(),
+                )
             d.addErrback(twlog.err,
                          "while calling client-side remote_newbuild")
         self.observers.append((observer, send))
