@@ -737,26 +737,28 @@ class Try(pb.Referenceable):
         self.currentStep[buildername] = stepname
 
     def remote_stepFinished(self, buildername, build, stepname, step, results):
+        self.outstanding.append('log-' + buildername)
         output('-' * 72)
         output('| Step done: %s %s' % (stepname, results))
         output('-' * 72)
 
+        @defer.inlineCallbacks
         def cb_got_logs_references(result):
             """
             Called when we got the references to logs for this step.
             """
             for log_name, log_pb in result.items():
-                d = log_pb.callRemote('getTextWithHeaders')
-                d.addCallback(cb_got_log_content, log_name)
+                result = yield log_pb.callRemote('getTextWithHeaders')
 
-        def cb_got_log_content(result, log_name):
-            """
-            Called when we got log's content.
-            """
-            output('-' * 72)
-            output('| Logs for %s' % (log_name,))
-            output('-' * 72)
-            output(result)
+                output('-' * 72)
+                output('| Logs for %s' % (log_name,))
+                output('-' * 72)
+                output(result)
+
+            self.outstanding.remove('log-' + buildername)
+
+        d = step.callRemote('getLogs')
+        d.addCallback(cb_got_logs_references)
 
     def remote_buildETAUpdate(self, buildername, build, eta):
         self.ETA[buildername] = now() + eta
@@ -783,7 +785,7 @@ class Try(pb.Referenceable):
 
         self.outstanding.remove(builderName)
         if not self.outstanding:
-            # all done
+            # Looks like logs were already retrieved.
             return self.statusDone()
 
     def printStatus(self):
@@ -801,11 +803,16 @@ class Try(pb.Referenceable):
                     if self.ETA[n]:
                         t += " [ETA %ds]" % (self.ETA[n] - now())
                 else:
-                    t = "no build"
-                self.announce("%s: %s" % (n, t))
+                    t = "no build yet / pending"
+                self.announce(
+                    "%s - %s - Waiting for %s" % (n, t, self.outstanding))
             self.announce("")
         except Exception:
             log.err(None, "printing status")
+
+        if not self.outstanding:
+            # Looks like we are done.
+            return self.statusDone()
 
     def statusDone(self):
         if self.printloop:
