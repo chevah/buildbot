@@ -158,7 +158,7 @@ class Git(Source):
 
         def checkPatched(patched):
             if patched:
-                return self._dovccmd(['clean', '-f', '-f', '-d', '-x'])
+                return self._dovccmd(['clean', '-f', '-f', '-d'])
             else:
                 return 0
         d.addCallback(checkPatched)
